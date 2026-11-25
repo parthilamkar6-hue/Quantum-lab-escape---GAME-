@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quantum Lab Escape</title>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  font-family: Arial, sans-serif;
+  color: #eafaff;
+  background:
+    radial-gradient(ellipse at 50% 30%, #10365a, #071322 55%, #030812);
+}
+
+header {
+  text-align: center;
+  padding: 24px 12px;
+  border-bottom: 1px solid #1c6683;
+  letter-spacing: 2px;
+}
+
+header h1 {
+  color: #55eaff;
+  text-shadow: 0 0 18px #00cfff;
+  margin: 0 0 8px;
+}
+
+header p { color: #8baec2; }
+
+.container {
+  width: min(950px, 94%);
+  margin: 25px auto;
+}
+
+.panel {
+  background: rgba(9, 28, 48, .88);
+  border: 1px solid #17617c;
+  border-radius: 15px;
+  padding: 20px;
+  margin-bottom: 18px;
+  box-shadow: 0 0 20px #00cfff13;
+}
+
+h2 { color: #55eaff; }
+
+.stats {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  color: #9adcec;
+}
+
+.mission {
+  border-left: 4px solid #40e5ff;
+  padding: 10px 15px;
+  background: #0c3045;
+  line-height: 1.7;
+}
+
+.lab {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  align-items: center;
+}
+
+.sphere-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.sphere {
+  width: 175px;
+  height: 175px;
+  position: relative;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 30%, #a6ffff, #0876a3 22%,
+    #092c65 60%, #061326);
+  border: 2px solid #48eaff;
+  box-shadow: 0 0 25px #00cfff80, inset 0 0 30px #00dfff55;
+  transform-style: preserve-3d;
+}
+
+.sphere:before {
+  content: "";
+  position: absolute;
+  inset: 25px 0;
+  border: 1px solid #78edff80;
+  border-radius: 50%;
+  transform: rotateX(65deg);
+}
+
+.sphere:after {
+  content: "";
+  position: absolute;
+  inset: 0 48px;
+  border: 1px solid #78edff70;
+  border-radius: 50%;
+}
+
+.axis {
+  position: absolute;
+  height: 2px;
+  width: 145px;
+  background: #c4fbff;
+  top: 50%;
+  left: 15px;
+  transform-origin: center;
+}
+
+.state-vector {
+  position: absolute;
+  width: 3px;
+  height: 72px;
+  background: #ffffff;
+  bottom: 50%;
+  left: calc(50% - 1px);
+  transform-origin: bottom;
+  box-shadow: 0 0 12px #fff;
+  transition: transform .5s;
+  z-index: 2;
+}
+
+.vector-tip {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: #fff;
+  border-radius: 50%;
+  top: -5px;
+  left: -5px;
+  box-shadow: 0 0 12px #fff;
+}
+
+.controls {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+button {
+  padding: 13px 8px;
+  border-radius: 9px;
+  border: 1px solid #26bde5;
+  color: #e9fcff;
+  background: #10405e;
+  font-weight: bold;
+  cursor: pointer;
+  transition: .2s;
+}
+
+button:hover:not(:disabled) {
+  background: #087fa6;
+  box-shadow: 0 0 15px #00cfff88;
+  transform: translateY(-2px);
+}
+
+button:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.measure {
+  background: #62449b;
+  border-color: #b994ff;
+}
+
+.reset {
+  background: #47313b;
+  border-color: #b9758f;
+}
+
+.next {
+  background: #087e66;
+  border-color: #4af5bd;
+  width: 100%;
+  margin-top: 15px;
+}
+
+.prob-row {
+  margin: 15px 0;
+}
+
+.bar {
+  background: #142e43;
+  height: 14px;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 7px;
+}
+
+.fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #087cff, #43edff);
+  transition: width .4s;
+}
+
+#p1fill {
+  background: linear-gradient(90deg, #9d58ff, #ff70df);
+}
+
+.readout {
+  background: #041522;
+  border: 1px solid #1d546c;
+  padding: 14px;
+  border-radius: 9px;
+  line-height: 1.9;
+  overflow-wrap: anywhere;
+}
+
+.status {
+  color: #54eaff;
+  min-height: 28px;
+  margin-top: 12px;
+}
+
+.gate-history {
+  color: #a4d4e4;
+  min-height: 24px;
+}
+
+footer {
+  text-align: center;
+  color: #6e9bad;
+  padding: 20px;
+  font-size: 12px;
+}
+
+@media(max-width: 600px) {
+  .lab { grid-template-columns: 1fr; }
+  .controls { grid-template-columns: repeat(3, 1fr); }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>QUANTUM LAB ESCAPE</h1>
+  <p>QUANTUM EXPERIMENT SIMULATOR // ACCESS LEVEL 01</p>
+</header>
+
+<div class="container">
+
+  <div class="panel stats">
+    <span>🔬 QUANTUM LAB</span>
+    <span id="level">LEVEL 1 / 4</span>
+    <span>⭐ SCORE: <b id="score">0</b></span>
+  </div>
+
+  <div class="panel">
+    <h2 id="missionTitle">Mission 01: Create Superposition</h2>
+    <div class="mission">
+      <b>MISSION:</b>
+      <p id="missionText">
+        Your qubit is in state |0⟩. Apply the Hadamard gate
+        to create an equal superposition.
+      </p>
+      <b>TARGET STATE: <span id="target">|+⟩</span></b>
+    </div>
+  </div>
+
+  <div class="panel lab">
+
+    <div class="sphere-area">
+      <h2>Qubit Visualization</h2>
+
+      <div class="sphere">
+        <div class="axis"></div>
+        <div class="state-vector" id="vector">
+          <div class="vector-tip"></div>
+        </div>
+      </div>
+
+      <span>Bloch Sphere - Conceptual View</span>
+      <div class="readout" id="state">
+        α = 1.000<br>
+        β = 0.000
+      </div>
+    </div>
+
+    <div>
+      <h2>Quantum Gates</h2>
+      <p>Choose a gate to modify your qubit.</p>
+
+      <div class="controls">
+        <button onclick="applyGate('H')">H</button>
+        <button onclick="applyGate('X')">X</button>
+        <button onclick="applyGate('Z')">Z</button>
+      </div>
+
+      <p class="gate-history" id="history">
+        Gates applied: None
+      </p>
+
+      <h2>Measurement Probability</h2>
+
+      <div class="prob-row">
+        <span>|0⟩ : <b id="p0">100%</b></span>
+        <div class="bar">
+          <div class="fill" id="p0fill"></div>
+        </div>
+      </div>
+
+      <div class="prob-row">
+        <span>|1⟩ : <b id="p1">0%</b></span>
+        <div class="bar">
+          <div class="fill" id="p1fill"></div>
+        </div>
+      </div>
+
+      <button class="measure" style="width:100%;margin-top:12px"
+        onclick="measureQubit()">⚡ MEASURE QUBIT</button>
+
+      <button class="reset" style="width:100%;margin-top:10px"
+        onclick="resetLevel()">↻ RESET LEVEL</button>
+
+      <div class="status" id="status">
+        System ready. Complete your mission.
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Mission Control</h2>
+    <p id="explanation">
+      The Hadamard gate creates an equal superposition from |0⟩.
+    </p>
+    <button class="next" id="next" onclick="nextLevel()" disabled>
+      NEXT MISSION 🔒
+    </button>
+  </div>
+
+  <div class="panel">
+    <h2>Quantum Knowledge</h2>
+    <p>
+      <b>Qubit:</b> The basic unit of quantum information.
+    </p>
+    <p>
+      <b>Superposition:</b> A quantum state can be a combination
+      of |0⟩ and |1⟩.
+    </p>
+    <p>
+      <b>Hadamard (H):</b> Creates or changes superposition.
+    </p>
+    <p>
+      <b>Pauli-X (X):</b> Swaps |0⟩ and |1⟩.
+    </p>
+    <p>
+      <b>Pauli-Z (Z):</b> Changes the phase of the |1⟩ amplitude.
+    </p>
+    <p>
+      <b>Measurement:</b> Produces 0 or 1 according to their
+      respective probabilities and collapses the simulated state.
+    </p>
+  </div>
+
+</div>
+
+<footer>
+  QUANTUM LAB ESCAPE // EDUCATIONAL SIMULATION
+</footer>
+
+<script>
+
+// Quantum state: |ψ⟩ = α|0⟩ + β|1⟩
+let alpha = 1;
+let beta = 0;
+
+let score = 0;
+let currentLevel = 0;
+let history = [];
+let completed = false;
+
+const missions = [
+  {
+    title: "Mission 01: Create Superposition",
+    description: "Your qubit starts in |0⟩. Apply H to create equal superposition.",
+    target: "|+⟩",
+    explanation: "H|0⟩ = (|0⟩ + |1⟩)/√2. Both measurement outcomes have 50% probability.",
+    a: Math.SQRT1_2,
+    b: Math.SQRT1_2
+  },
+  {
+    title: "Mission 02: Flip the Qubit",
+    description: "Change the initial state |0⟩ into |1⟩ using a quantum gate.",
+    target: "|1⟩",
+    explanation: "The Pauli-X gate flips the computational basis states: X|0⟩ = |1⟩.",
+    a: 0,
+    b: 1
+  },
+  {
+    title: "Mission 03: Negative Superposition",
+    description: "Create the |−⟩ state. First use X, then H.",
+    target: "|−⟩",
+    explanation: "H X|0⟩ = (|0⟩ − |1⟩)/√2. The minus sign represents a relative phase.",
+    a: Math.SQRT1_2,
+    b: -Math.SQRT1_2
+  },
+  {
+    title: "Mission 04: Restore the Qubit",
+    description: "Your final mission: return the qubit to |0⟩ by applying H twice.",
+    target: "|0⟩",
+    explanation: "H × H = I. Applying Hadamard twice returns the original state.",
+    a: 1,
+    b: 0
+  }
+];
+
+function updateDisplay() {
+  let p0 = alpha * alpha;
+  let p1 = beta * beta;
+
+  document.getElementById("p0").textContent =
+    (p0 * 100).toFixed(1) + "%";
+
+  document.getElementById("p1").textContent =
+    (p1 * 100).toFixed(1) + "%";
+
+  document.getElementById("p0fill").style.width =
+    (p0 * 100) + "%";
+
+  document.getElementById("p1fill").style.width =
+    (p1 * 100) + "%";
+
+  document.getElementById("state").innerHTML =
+    "α = " + alpha.toFixed(3) +
+    "<br>β = " + beta.toFixed(3) +
+    "<br>State = " + alpha.toFixed(3) +
+    "|0⟩ + " + beta.toFixed(3) + "|1⟩";
+
+  // Conceptual Bloch sphere direction for real amplitudes
+  let angle = 2 * Math.atan2(beta, alpha) * 180 / Math.PI;
+  document.getElementById("vector").style.transform =
+    "rotate(" + angle + "deg)";
+
+  document.getElementById("history").textContent =
+    "Gates applied: " + (history.join(" → ") || "None");
+}
+
+function applyGate(gate) {
+
+  if (completed) return;
+
+  let a = alpha;
+  let b = beta;
+
+  if (gate === "H") {
+    alpha = (a + b) / Math.SQRT2;
+    beta = (a - b) / Math.SQRT2;
+  }
+
+  if (gate === "X") {
+    alpha = b;
+    beta = a;
+  }
+
+  if (gate === "Z") {
+    alpha = a;
+    beta = -b;
+  }
+
+  history.push(gate);
+
+  updateDisplay();
+  checkMission();
+
+  document.getElementById("status").textContent =
+    gate + " gate applied successfully!";
+}
+
+function checkMission() {
+
+  let m = missions[currentLevel];
+
+  // Fidelity: squared overlap between actual and target states
+  let overlap = alpha * m.a + beta * m.b;
+  let fidelity = overlap * overlap;
+
+  if (fidelity > 0.999999 && !completed) {
+
+    completed = true;
+    score += 100;
+
+    document.getElementById("score").textContent = score;
+    document.getElementById("next").disabled = false;
+    document.getElementById("next").textContent =
+      currentLevel === 3 ? "FINISH GAME 🏆" : "NEXT MISSION 🔓";
+
+    document.getElementById("status").textContent =
+      "MISSION COMPLETED! +100 POINTS";
+
+    document.getElementById("explanation").textContent =
+      m.explanation;
+  }
+}
+
+function measureQubit() {
+
+  if (completed) {
+    document.getElementById("status").textContent =
+      "Mission completed! Continue to the next level.";
+    return;
+  }
+
+  let p0 = alpha * alpha;
+  let result = Math.random() < p0 ? 0 : 1;
+
+  // Measurement collapses the state
+  alpha = result === 0 ? 1 : 0;
+  beta = result === 1 ? 1 : 0;
+
+  updateDisplay();
+
+  document.getElementById("status").textContent =
+    "Measurement result: |" + result +
+    "⟩. The state has collapsed!";
+}
+
+function resetLevel() {
+
+  alpha = 1;
+  beta = 0;
+  history = [];
+  completed = false;
+
+  document.getElementById("next").disabled = true;
+  document.getElementById("next").textContent = "NEXT MISSION 🔒";
+
+  document.getElementById("status").textContent =
+    "Qubit reset to |0⟩.";
+
+  document.getElementById("explanation").textContent =
+    missions[currentLevel].explanation;
+
+  updateDisplay();
+}
+
+function loadLevel() {
+
+  let m = missions[currentLevel];
+
+  document.getElementById("level").textContent =
+    "LEVEL " + (currentLevel + 1) + " / 4";
+
+  document.getElementById("missionTitle").textContent = m.title;
+  document.getElementById("missionText").textContent = m.description;
+  document.getElementById("target").textContent = m.target;
+  document.getElementById("explanation").textContent = m.explanation;
+
+  resetLevel();
+}
+
+function nextLevel() {
+
+  if (!completed) return;
+
+  if (currentLevel === missions.length - 1) {
+
+    document.getElementById("missionTitle").textContent =
+      "LAB ESCAPED!";
+
+    document.getElementById("missionText").textContent =
+      "Congratulations! You successfully completed all quantum experiments.";
+
+    document.getElementById("target").textContent = "✓";
+
+    document.getElementById("next").textContent =
+      "PLAY AGAIN ↻";
+
+    document.getElementById("next").onclick = () => {
+      currentLevel = 0;
+      score = 0;
+      document.getElementById("score").textContent = score;
+      document.getElementById("next").onclick = nextLevel;
+      loadLevel();
+    };
+
+    document.getElementById("next").disabled = false;
+
+    document.getElementById("status").textContent =
+      "ALL MISSIONS COMPLETE! YOU ESCAPED THE LAB!";
+
+    return;
+  }
+
+  currentLevel++;
+  loadLevel();
+}
+
+loadLevel();
+
+</script>
+
+</body>
+</html>
